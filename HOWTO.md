@@ -32,7 +32,7 @@ Lines that lack hash or dollar signs are pastes from config files. They
 should be copied verbatim or adapted without the indentation tab.
 
 `apt-get install` commands are suggestions for required dependencies.
-They conform to an Ubuntu 13.10 system but may well work with Debian
+They conform to an Ubuntu 15.10 system but may well work with Debian
 or other versions of Ubuntu.
 
 Prerequisites
@@ -53,16 +53,20 @@ build chain. You will need root access in order to install other software or
 Python libraries. Python 2.7 is the minimum supported version.
 
 **Hardware.** The lightest setup is a pruning server with diskspace
-requirements of about 10 GB for the Electrum database. However note that
+requirements of about 30 GB for the Electrum database (February 2016). However note that
 you also need to run bitcoind and keep a copy of the full blockchain,
-which is roughly 37 GB in July 2015. If you have less than 2 GB of RAM
-make sure you limit bitcoind to 8 concurrent connections. If you have more
-resources to spare you can run the server with a higher limit of historic
-transactions per address. CPU speed is important for the initial block
-chain import, but is also important if you plan to run a public Electrum server,
-which could serve tens of concurrent requests. Any multi-core x86 CPU from 2009 or
-newer other than an Atom should do for good performance. An ideal setup
-has enough RAM to hold and process the leveldb database in tmpfs (e.g. `/dev/shm`).
+which is roughly 55 GB (February 2016). Ideally you have a machine with 16 GB of RAM
+and an equal amount of swap. If you have ~2 GB of RAM make sure you limit bitcoind 
+to 8 concurrent connections by disabling incoming connections. electrum-server may
+bail-out on you from time to time with less than 4 GB of RAM, so you might have to 
+monitor the process and restart it. You can tweak cache sizes in the config to an extend
+but most RAM will be used to process blocks and catch-up on initial start.
+
+CPU speed is less important than fast I/O speed. electrum-server makes uses of one core 
+only leaving spare cycles for bitcoind. Fast single core CPU power helps for the initial 
+block chain import. Any multi-core x86 CPU with CPU Mark / PassMark > 1500 will work
+(see https://www.cpubenchmark.net/). An ideal setup in February 2016 has 16 GB+ RAM and
+SSD for good i/o speed.
 
 Instructions
 ------------
@@ -89,22 +93,15 @@ to your `.bashrc`, `.profile`, or `.bash_profile`, then logout and relogin:
 
 ### Step 2. Download bitcoind
 
-Older versions of Electrum required a patched version of bitcoind.
-This is not the case anymore since bitcoind supports the 'txindex' option.
-We currently recommend bitcoind 0.11.0 stable. Please do *not* upgrade to 0.11.1 until
-Electrum client 2.5 has been released and distributed for some time.
-0.11.1 and Electrum clients prior to 2.5 suffer from the transaction index being denied by
-bitcoind with the error, "mandatory-script-verify-flag-failed u'code': -26".
+We currently recommend bitcoin core 0.12.1 stable. If your package manager does not supply
+a recent bitcoind or you prefer to compile it yourself, here are some pointers for Ubuntu:
 
-If your package manager does not supply a recent bitcoind or you prefer to compile it yourself,
-here are some pointers for Ubuntu:
-
-    $ sudo apt-get install make g++ python-leveldb libboost-all-dev libssl-dev libdb++-dev pkg-config
+    $ sudo apt-get install make g++ python-leveldb libboost-all-dev libssl-dev libdb++-dev pkg-config libevent-dev
     $ sudo su - bitcoin
-    $ cd ~/src && wget https://bitcoin.org/bin/bitcoin-core-0.11.0/bitcoin-0.11.0.tar.gz
-    $ sha256sum bitcoin-0.11.0.tar.gz | grep 51ba1756addfa71567559e3f22331c1d908a63571891287689fff7113035d09f
-    $ tar xfz bitcoin-0.11.0.tar.gz
-    $ cd bitcoin-0.11.0
+    $ cd ~/src && wget https://bitcoin.org/bin/bitcoin-core-0.12.1/bitcoin-0.12.1.tar.gz
+    $ sha256sum bitcoin-0.12.1.tar.gz | grep 08fc3b6c05c39fb975bba1f6dd49992df46511790ce8dc67398208af9565e199
+    $ tar xfz bitcoin-0.12.1.tar.gz
+    $ cd bitcoin-0.12.1
     $ ./configure --disable-wallet --without-miniupnpc
     $ make
     $ strip src/bitcoind src/bitcoin-cli src/bitcoin-tx
@@ -154,6 +151,7 @@ We will download the latest git snapshot for Electrum to configure and install i
     $ cd ~
     $ git clone https://github.com/spesmilo/electrum-server.git
     $ cd electrum-server
+    $ sudo apt-get install python-setuptools
     $ sudo configure
     $ sudo python setup.py install
 
@@ -167,6 +165,10 @@ package manager if you don't want to use the install routine.
 
     $ sudo apt-get install python-setuptools python-openssl python-leveldb libleveldb-dev
     $ sudo easy_install jsonrpclib irc plyvel
+
+For the python irc module please note electrum-server currently only supports versions between 11 and 14.0. 
+The setup.py takes care of installing a supported version but be aware of it when installing or upgrading
+manually.
 
 Regarding leveldb, see the steps in README.leveldb for further details, especially if your system
 doesn't have the python-leveldb package or if plyvel installation fails.
@@ -222,9 +224,9 @@ It's not recommended to do initial indexing of the database on an SSD because th
 does at least 20 TB (!) of disk writes and puts considerable wear-and-tear on an SSD. It's a lot better
 to use tmpfs and just swap out to disk when necessary.
 
-Databases have grown to roughly 8 GB in April 2014, give or take a gigabyte, between pruning limits
-100 and 10000. Leveldb prunes the database from time to time, so it's not uncommon to see databases
-~50% larger at times when it's writing a lot, especially when indexing from the beginning.
+Databases have grown to roughly 30 GB as of February 2016. Leveldb prunes the database from time to time,
+so it's not uncommon to see databases ~50% larger at times when it's writing a lot, especially when
+indexing from the beginning.
 
 
 ### Step 8. Create a self-signed SSL cert
@@ -309,7 +311,9 @@ Or if you use sudo and the user is added to sudoers group:
 
 Two more things for you to consider:
 
-1. To increase security you may want to close bitcoind for incoming connections and connect outbound only
+1. To increase privacy of transactions going through your server
+   you may want to close bitcoind for incoming connections and connect outbound only. Most servers do run
+   full nodes with open incoming connections though.
 
 2. Consider restarting bitcoind (together with electrum-server) on a weekly basis to clear out unconfirmed
    transactions from the local the memory pool which did not propagate over the network.
@@ -326,6 +330,12 @@ unprivileged user.
 You should see this in the log file:
 
     starting Electrum server
+
+If your blockchain database is out of date Electrum Server will start updating it. You will see something similar to this in the log file:
+
+    [09/02/2016-09:58:18] block 397319 (1727 197.37s) 0290aae5dc6395e2c60e8b2c9e48a7ee246cad7d0630d17dd5b54d70a41ffed7 (10.13tx/s, 139.78s/block) (eta 11.5 hours, 240 blocks)
+    
+The important pieces to you are at the end. In this example, the server has to calculate 240 more blocks, with an ETA of 11.5 hours. Multiple entries will appear below this one as the server catches back up to the latest block. During this time the server will not accept incoming connections from clients or connect to the IRC channel.
 
 If you want to stop Electrum server, use the 'stop' command:
 
