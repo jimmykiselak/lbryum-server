@@ -3,8 +3,8 @@ from setuptools import setup
 setup(
     name="electrum-server",
     version="1.0",
-    scripts=['run_electrum_server.py','electrum-server'],
-    install_requires=['plyvel','jsonrpclib', 'irc >= 11, <=14.0'],
+    scripts=['run_electrum_server.py', 'electrum-server'],
+    install_requires=['python-sha3', 'plyvel', 'jsonrpclib', 'irc >= 11, <=14.0'],
     package_dir={
         'electrumserver':'src'
         },
@@ -26,5 +26,6 @@ setup(
     author_email="thomasv@electrum.org",
     license="MIT Licence",
     url="https://github.com/spesmilo/electrum-server/",
+    dependency_links=['https://github.com/bjornedstrom/python-sha3/tarball/master/#egg=python-sha3'],
     long_description="""Server for the Electrum Lightweight Bitcoin Wallet"""
 )

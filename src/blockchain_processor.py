@@ -21,7 +21,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import hashlib
+import sha3
 from json import dumps, load
 import os
 from Queue import Queue
@@ -348,7 +348,7 @@ class BlockchainProcessor(Processor):
         if tx_points == ['*']:
             return '*'
         status = ''.join(tx.get('tx_hash') + ':%d:' % tx.get('height') for tx in tx_points)
-        return hashlib.sha256(status).digest().encode('hex')
+        return sha3.sha3_256(status).hexdigest()
 
     def get_merkle(self, tx_hash, height, cache_only):
         with self.cache_lock:

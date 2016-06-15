@@ -24,6 +24,7 @@
 from itertools import imap
 import threading
 import time
+import sha3
 import hashlib
 import struct
 
@@ -39,7 +40,8 @@ def rev_hex(s):
     return s.decode('hex')[::-1].encode('hex')
 
 
-Hash = lambda x: hashlib.sha256(hashlib.sha256(x).digest()).digest()
+#Hash = lambda x: hashlib.sha256(hashlib.sha256(x).digest()).digest()
+Hash = lambda x: sha3.sha3_256(x).hexdigest()
 
 
 hash_encode = lambda x: x[::-1].encode('hex')

@@ -23,7 +23,7 @@
 
 import plyvel
 import ast
-import hashlib
+import sha3
 import os
 import sys
 import threading
