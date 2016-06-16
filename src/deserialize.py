@@ -265,8 +265,8 @@ opcodes = Enumeration("Opcodes", [
     "OP_WITHIN", "OP_RIPEMD160", "OP_SHA1", "OP_SHA256", "OP_HASH160",
     "OP_HASH256", "OP_CODESEPARATOR", "OP_CHECKSIG", "OP_CHECKSIGVERIFY", "OP_CHECKMULTISIG",
     "OP_CHECKMULTISIGVERIFY",
-    "OP_NOP1", "OP_NOP2", "OP_NOP3", "OP_NOP4", "OP_NOP5", "OP_NOP6", "OP_NOP7", "OP_NOP8", "OP_NOP9", "OP_NOP10",
-    ("OP_INVALIDOPCODE", 0xFF),
+    "OP_NOP1", "OP_NOP2", "OP_NOP3", "OP_NOP4", "OP_NOP5", "OP_CLAIM_NAME", "OP_SUPPORT_CLAIM",
+    "OP_UPDATE_CLAIM", "OP_NOP9", "OP_NOP10", ("OP_INVALIDOPCODE", 0xFF),
 ])
 
 
@@ -329,23 +329,81 @@ def match_decoded(decoded, to_match):
     return True
 
 
+class NameClaim(object):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+
+class ClaimUpdate(object):
+    def __init__(self, name, value, claim_id):
+        self.name = name
+        self.value = value
+        self.claim_id = claim_id
+
+
+class ClaimSupport(object):
+    def __init__(self, name, claim_id):
+        self.name = name
+        self.claim_id = claim_id
+
 
 def decode_claim_script(decoded_script):
     if len(decoded_script) <= 6:
         return False
-    if decoded_script[0][0] != 0:
+    op = 0
+    claim_type = decoded_script[op][0]
+    if claim_type == opcodes.OP_UPDATE_CLAIM:
+        if len(decoded_script) <= 7:
+            return False
+    if claim_type not in [
+        opcodes.OP_CLAIM_NAME,
+        opcodes.OP_SUPPORT_CLAIM,
+        opcodes.OP_UPDATE_CLAIM
+    ]:
         return False
-    if not (0 < decoded_script[1][0] <= opcodes.OP_PUSHDATA4):
+    op += 1
+    value = None
+    claim_id = None
+    claim = None
+    if not (0 < decoded_script[op][0] <= opcodes.OP_PUSHDATA4):
         return False
-    name = decoded_script[1][1]
-    if not (0 < decoded_script[2][0] <= opcodes.OP_PUSHDATA4):
+    name = decoded_script[op][1]
+    op += 1
+    if not (0 < decoded_script[op][0] <= opcodes.OP_PUSHDATA4):
         return False
-    value = decoded_script[2][1]
-    if decoded_script[3][0] != opcodes.OP_2DROP:
+    if decoded_script[0][0] in [
+        opcodes.OP_SUPPORT_CLAIM,
+        opcodes.OP_UPDATE_CLAIM
+    ]:
+        claim_id = decoded_script[op][1]
+        if len(claim_id) != 20:
+            return False
+    else:
+        value = decoded_script[op][1]
+    op += 1
+    if decoded_script[0][0] == opcodes.OP_UPDATE_CLAIM:
+        value = decoded_script[op][1]
+        op += 1
+    if decoded_script[op][0] != opcodes.OP_2DROP:
         return False
-    if decoded_script[4][0] != opcodes.OP_DROP:
+    op += 1
+    if decoded_script[op][0] != opcodes.OP_DROP:
         return False
-    return name, value, decoded_script[5:]
+    op += 1
+    if decoded_script[0] == opcodes.OP_CLAIM_NAME:
+        if name is None or value is None:
+            return False
+        claim = NameClaim(name, value)
+    elif decoded_script[0] == opcodes.OP_UPDATE_CLAIM:
+        if name is None or value is None or claim_id is None:
+            return False
+        claim = ClaimUpdate(name, value, claim_id)
+    elif decoded_script[0] == opcodes.OP_SUPPORT_CLAIM:
+        if name is None or claim_id is None:
+            return False
+        claim = ClaimSupport(name, claim_id)
+    return claim, decoded_script[op:]
 
 
 def get_address_from_output_script(bytes):
@@ -355,7 +413,7 @@ def get_address_from_output_script(bytes):
         return None
     r = decode_claim_script(decoded)
     if r is not False:
-        claim_name, claim_value, decoded = r
+        claim_info, decoded = r
 
     # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
     # 65 BYTES:... CHECKSIG

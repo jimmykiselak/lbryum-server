@@ -44,7 +44,7 @@ from urlparse import urlparse
 HEADER_SIZE = 112
 
 
-BLOCKS_PER_CHUNK = 720
+BLOCKS_PER_CHUNK = 96 #720
 
 USER_AGENT = "AuthServiceProxy/0.1"
 HTTP_TIMEOUT = 30
@@ -286,7 +286,7 @@ class BlockchainProcessor(Processor):
             "version": b.get('version'),
             "prev_block_hash": b.get('previousblockhash'),
             "merkle_root": b.get('merkleroot'),
-            "claim_trie_root": b.get('nccroot'),
+            "claim_trie_root": b.get('nameclaimroot'),
             "timestamp": b.get('time'),
             "bits": int(b.get('bits'), 16),
             "nonce": b.get('nonce'),
