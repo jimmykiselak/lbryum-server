@@ -54,16 +54,16 @@ Python libraries. Python 2.7 is the minimum supported version.
 
 **Hardware.** The lightest setup is a pruning server with diskspace
 requirements of about 30 GB for the Electrum database (February 2016). However note that
-you also need to run bitcoind and keep a copy of the full blockchain,
+you also need to run lbrycrdd and keep a copy of the full blockchain,
 which is roughly 55 GB (February 2016). Ideally you have a machine with 16 GB of RAM
-and an equal amount of swap. If you have ~2 GB of RAM make sure you limit bitcoind 
+and an equal amount of swap. If you have ~2 GB of RAM make sure you limit lbrycrdd
 to 8 concurrent connections by disabling incoming connections. electrum-server may
 bail-out on you from time to time with less than 4 GB of RAM, so you might have to 
 monitor the process and restart it. You can tweak cache sizes in the config to an extend
 but most RAM will be used to process blocks and catch-up on initial start.
 
 CPU speed is less important than fast I/O speed. electrum-server makes uses of one core 
-only leaving spare cycles for bitcoind. Fast single core CPU power helps for the initial 
+only leaving spare cycles for lbrycrdd. Fast single core CPU power helps for the initial
 block chain import. Any multi-core x86 CPU with CPU Mark / PassMark > 1500 will work
 (see https://www.cpubenchmark.net/). An ideal setup in February 2016 has 16 GB+ RAM and
 SSD for good i/o speed.
@@ -71,10 +71,10 @@ SSD for good i/o speed.
 Instructions
 ------------
 
-### Step 1. Create a user for running bitcoind and Electrum server
+### Step 1. Create a user for running lbrycrdd and Electrum server
 
 This step is optional, but for better security and resource separation I
-suggest you create a separate user just for running `bitcoind` and Electrum.
+suggest you create a separate user just for running `lbrycrdd` and Electrum.
 We will also use the `~/bin` directory to keep locally installed files
 (others might want to use `/usr/local/bin` instead). We will download source
 code files to the `~/src` directory.
@@ -91,10 +91,10 @@ to your `.bashrc`, `.profile`, or `.bash_profile`, then logout and relogin:
     PATH="$HOME/bin:$PATH"
     $ exit
 
-### Step 2. Download bitcoind
+### Step 2. Download lbrycrdd
 
 We currently recommend bitcoin core 0.12.1 stable. If your package manager does not supply
-a recent bitcoind or you prefer to compile it yourself, here are some pointers for Ubuntu:
+a recent lbrycrdd or you prefer to compile it yourself, here are some pointers for Ubuntu:
 
     $ sudo apt-get install make g++ python-leveldb libboost-all-dev libssl-dev libdb++-dev pkg-config libevent-dev
     $ sudo su - bitcoin
@@ -104,13 +104,13 @@ a recent bitcoind or you prefer to compile it yourself, here are some pointers f
     $ cd bitcoin-0.12.1
     $ ./configure --disable-wallet --without-miniupnpc
     $ make
-    $ strip src/bitcoind src/bitcoin-cli src/bitcoin-tx
-    $ cp -a src/bitcoind src/bitcoin-cli src/bitcoin-tx ~/bin
+    $ strip src/lbrycrdd src/bitcoin-cli src/bitcoin-tx
+    $ cp -a src/lbrycrdd src/bitcoin-cli src/bitcoin-tx ~/bin
 
-### Step 3. Configure and start bitcoind
+### Step 3. Configure and start lbrycrdd
 
-In order to allow Electrum to "talk" to `bitcoind`, we need to set up an RPC
-username and password for `bitcoind`. We will then start `bitcoind` and
+In order to allow Electrum to "talk" to `lbrycrdd`, we need to set up an RPC
+username and password for `lbrycrdd`. We will then start `lbrycrdd` and
 wait for it to complete downloading the blockchain.
 
     $ mkdir ~/.bitcoin
@@ -124,23 +124,23 @@ Write this in `bitcoin.conf`:
     txindex=1
 
 
-If you have an existing installation of bitcoind and have not previously
+If you have an existing installation of lbrycrdd and have not previously
 set txindex=1 you need to reindex the blockchain by running
 
-    $ bitcoind -reindex
+    $ lbrycrdd -reindex
 
-If you already have a freshly indexed copy of the blockchain with txindex start `bitcoind`:
+If you already have a freshly indexed copy of the blockchain with txindex start `lbrycrdd`:
 
-    $ bitcoind
+    $ lbrycrdd
 
-Allow some time to pass for `bitcoind` to connect to the network and start
+Allow some time to pass for `lbrycrdd` to connect to the network and start
 downloading blocks. You can check its progress by running:
 
     $ bitcoin-cli getblockchaininfo
 
-Before starting the Electrum server your bitcoind should have processed all
+Before starting the Electrum server your lbrycrdd should have processed all
 blocks and caught up to the current height of the network (not just the headers).
-You should also set up your system to automatically start bitcoind at boot
+You should also set up your system to automatically start lbrycrdd at boot
 time, running as the 'bitcoin' user. Check your system documentation to
 find out the best way to do this.
 
@@ -272,7 +272,7 @@ in case you need to restore them.
 ### Step 9. Configure Electrum server
 
 Electrum reads a config file (/etc/electrum.conf) when starting up. This
-file includes the database setup, bitcoind RPC setup, and a few other
+file includes the database setup, lbrycrdd RPC setup, and a few other
 options.
 
 The "configure" script listed above will create a config file at /etc/electrum.conf
@@ -312,10 +312,10 @@ Or if you use sudo and the user is added to sudoers group:
 Two more things for you to consider:
 
 1. To increase privacy of transactions going through your server
-   you may want to close bitcoind for incoming connections and connect outbound only. Most servers do run
+   you may want to close lbrycrdd for incoming connections and connect outbound only. Most servers do run
    full nodes with open incoming connections though.
 
-2. Consider restarting bitcoind (together with electrum-server) on a weekly basis to clear out unconfirmed
+2. Consider restarting lbrycrdd (together with electrum-server) on a weekly basis to clear out unconfirmed
    transactions from the local the memory pool which did not propagate over the network.
 
 ### Step 11. (Finally!) Run Electrum server

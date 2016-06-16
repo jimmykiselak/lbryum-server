@@ -41,7 +41,7 @@ def rev_hex(s):
 
 
 #Hash = lambda x: hashlib.sha256(hashlib.sha256(x).digest()).digest()
-Hash = lambda x: sha3.sha3_256(x).hexdigest()
+Hash = lambda x: sha3.sha3_256(x).digest()
 
 
 hash_encode = lambda x: x[::-1].encode('hex')

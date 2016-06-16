@@ -279,7 +279,7 @@ class Storage(object):
     def listunspent(self, addr):
         key = self.address_to_key(addr)
         if key is None:
-            raise BaseException('Invalid Bitcoin address', addr)
+            raise BaseException('Invalid LBRY address', addr)
         out = []
         with self.db_utxo.lock:
             for k, v in self.db_utxo.db.iterator(start=key):
@@ -330,8 +330,8 @@ class Storage(object):
         return eval(s)
 
 
-    def write_undo_info(self, height, bitcoind_height, undo_info):
-        if height > bitcoind_height - 100 or self.test_reorgs:
+    def write_undo_info(self, height, lbrycrdd_height, undo_info):
+        if height > lbrycrdd_height - 100 or self.test_reorgs:
             self.db_undo.put("undo_info_%d" % (height % 100), repr(undo_info))
 
     @staticmethod
