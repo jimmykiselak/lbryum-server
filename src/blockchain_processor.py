@@ -126,7 +126,6 @@ class AuthServiceProxy(object):
     def _get_response(self):
         http_response = self.__conn.getresponse()
         r = http_response.read()
-        print_log(str(r))
         if http_response is None:
             raise JSONRPCException({
                 'code': -342, 'message': 'missing HTTP response from server'})
@@ -180,8 +179,6 @@ class BlockchainProcessor(Processor):
             config.get('lbrycrdd', 'lbrycrdd_password'),
             config.get('lbrycrdd', 'lbrycrdd_host'),
             config.get('lbrycrdd', 'lbrycrdd_port'))
-
-        print_log(self.lbrycrdd_url)
 
         self.sent_height = 0
         self.sent_header = None
@@ -252,9 +249,8 @@ class BlockchainProcessor(Processor):
 
     def lbrycrdd(self, method, args=(), whole_return=False):
         while True:
-            r = None
             try:
-                r = AuthServiceProxy(self.lbrycrdd_url, method).__call__(*args) #if args else AuthServiceProxy(self.lbrycrdd_url, method)()
+                r = AuthServiceProxy(self.lbrycrdd_url, method).__call__(*args)
                 if r['error'] is not None:
                     if r['error'].get('code') == -28:
                         print_log("lbrycrdd still warming up...")
@@ -328,7 +324,6 @@ class BlockchainProcessor(Processor):
 
                 self.write_header(header, sync=False)
                 prev_hash = self.hash_header(header)
-                print_log(prev_hash)
                 if (height % 1000) == 0:
                     print_log("headers file:", height)
         except KeyboardInterrupt:
@@ -746,12 +741,9 @@ class BlockchainProcessor(Processor):
                 continue
             try:
                 rawtxdata = []
-                print_log("*****************")
                 for ir in response:
-                    print_log(ir)
                     assert ir['error'] is None, "Error: make sure you run lbrycrdd with txindex=1; use -reindex if needed."
                     rawtxdata.append(ir['result'])
-                print_log("*****************")
 
             except BaseException as e:
                 logger.error(str(e))
